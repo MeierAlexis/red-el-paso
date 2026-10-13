@@ -1,0 +1,428 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Red El Paso en vivo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fjalla+One&family=Barlow+Condensed:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: consola de monitoreo a una pantalla: escenario (mapa o esquema) a la izquierda, panel de estado a la derecha. Verdes de la plantilla de las diapos. */
+:root {
+  color-scheme: dark;
+  --bg: #08291e;          /* verde noche, el más oscuro de la plantilla */
+  --panel: #0d3527;
+  --line: #1d5340;
+  --fg: #e6f4ea;
+  --muted: #98c9ad;
+  --accent: #3dbc58;      /* verde de la plantilla: enlace activo, cámara en vivo */
+  --accent-soft: #98d2aa;
+  --amber: #f2b33d;       /* grabando en microSD / UPS */
+  --red: #ff5a4f;         /* corte o equipo caído */
+  --blocked: #6f8f80;     /* puerto bloqueado por RSTP */
+  --font-display: "Fjalla One", "Arial Narrow", sans-serif;
+  --font-body: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, monospace;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 17px; }
+.app { display: grid; grid-template-rows: auto 1fr; height: 100%; padding-inline: 16px; padding-block: 10px; gap: 10px; box-sizing: border-box; }
+header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+h1 { font-family: var(--font-display); font-weight: 400; font-size: 26px; margin: 0; letter-spacing: .01em; text-wrap: balance; }
+h1 span { color: var(--accent); }
+.sub { color: var(--muted); font-size: 15px; }
+.spacer { flex: 1; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.seg button { border: 0; background: transparent; color: var(--muted); font: 600 15px var(--font-body); padding: 6px 14px; cursor: pointer; letter-spacing: .04em; text-transform: uppercase; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
+.btn { border: 1px solid var(--line); background: var(--panel); color: var(--fg); font: 500 15px var(--font-body); padding: 6px 12px; border-radius: 8px; cursor: pointer; }
+.btn:hover, .seg button:hover { filter: brightness(1.15); }
+button:focus-visible { outline: 2px solid var(--accent-soft); outline-offset: 2px; }
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 330px; gap: 14px; min-height: 0; }
+.stage { position: relative; min-height: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: #051c14; }
+.stage svg { width: 100%; height: 100%; display: block; }
+.hint { position: absolute; left: 12px; bottom: 10px; font-size: 14px; color: var(--muted); background: rgba(8,41,30,.82); padding: 4px 10px; border-radius: 6px; pointer-events: none; }
+aside { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+.card h2 { font: 600 13px var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
+.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.kpi b { display: block; font: 400 34px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.kpi small { color: var(--muted); font-size: 14px; line-height: 1.15; display: block; margin-top: 3px; }
+.kpi.ok b { color: var(--accent); } .kpi.sd b { color: var(--amber); } .kpi.off b { color: var(--red); }
+.load { margin-top: 10px; font-size: 15px; color: var(--muted); }
+.load strong { color: var(--fg); font-family: var(--font-data); font-weight: 500; font-size: 14px; }
+.bar { height: 6px; background: var(--line); border-radius: 3px; margin-top: 4px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); }
+.msg { font-size: 17px; line-height: 1.3; }
+.msg p { margin: 0 0 6px; } .msg p:last-child { margin: 0; }
+.scen { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.scen .btn { text-align: left; font-size: 15px; line-height: 1.15; padding: 7px 9px; }
+.scen .btn[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+.detail dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 10px; margin: 0; font-size: 15px; }
+.detail dt { color: var(--muted); } .detail dd { margin: 0; font-family: var(--font-data); font-size: 13.5px; }
+.detail h3 { font: 400 20px var(--font-display); margin: 0 0 6px; }
+.detail .nota { color: var(--muted); font-size: 15px; margin: 0 0 8px; }
+.legend { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; font-size: 14px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 18px; height: 0; border-top: 3px solid var(--c); margin-right: 6px; vertical-align: middle; }
+.legend span.dash::before { border-top-style: dashed; }
+.legend span.dot::before { width: 10px; height: 10px; border: 0; border-radius: 50%; background: var(--c); }
+.log { font-family: var(--font-data); font-size: 12.5px; color: var(--muted); max-height: 110px; overflow-y: auto; margin: 0; padding-left: 16px; }
+.log li { margin-bottom: 3px; }
+/* SVG */
+.edge { fill: none; stroke-linecap: round; cursor: pointer; }
+.edge-hit { fill: none; stroke: transparent; stroke-width: 40; cursor: pointer; }
+.lbl { font-family: var(--font-body); font-weight: 600; paint-order: stroke; stroke: #051c14; stroke-linejoin: round; }
+.node { cursor: pointer; }
+.cam { cursor: pointer; }
+.pulse { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
+@media (max-width: 900px) {
+  .main { grid-template-columns: 1fr; }
+  .stage { height: 62vh; }
+  .app { height: auto; }
+}
+</style>
+
+<div class="app">
+  <header>
+    <div>
+      <h1>Red de cámaras <span>·</span> Country El Paso</h1>
+      <div class="sub">TP 3 · Redes de Alta Velocidad · 30 cámaras, 13 gabinetes, anillo de fibra de 5,1 km</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="seg" role="group" aria-label="Vista">
+      <button id="v-mapa" aria-pressed="true">Mapa</button>
+      <button id="v-esq" aria-pressed="false">Esquema</button>
+    </div>
+    <button class="btn" id="reset">Restablecer</button>
+  </header>
+
+  <div class="main">
+    <div class="stage" id="stage">
+      <svg id="svg" preserveAspectRatio="xMidYMid meet" aria-label="Mapa de la red"></svg>
+      <div class="hint" id="hint">Clic en un tramo de fibra para cortarlo · clic en un gabinete para apagarlo · pasá el mouse por una cámara</div>
+    </div>
+    <aside>
+      <div class="card">
+        <h2>Estado de las cámaras</h2>
+        <div class="kpis">
+          <div class="kpi ok"><b id="k-ok">30</b><small>con imagen en la sala</small></div>
+          <div class="kpi sd"><b id="k-sd">0</b><small>grabando en su microSD</small></div>
+          <div class="kpi off"><b id="k-off">0</b><small>sin imagen</small></div>
+        </div>
+        <div class="load" id="load"></div>
+      </div>
+      <div class="card msg" id="msg"></div>
+      <div class="card">
+        <h2>Probar una falla</h2>
+        <div class="scen" id="scen"></div>
+      </div>
+      <div class="card detail" id="detail"></div>
+      <div class="card">
+        <h2>Referencias</h2>
+        <div class="legend">
+          <span style="--c:var(--accent)">Fibra en uso</span>
+          <span class="dash" style="--c:var(--blocked)">Bloqueado por RSTP</span>
+          <span style="--c:var(--red)">Tramo cortado</span>
+          <span class="dash" style="--c:#3fd0ff">UTP largo alcance</span>
+          <span class="dot" style="--c:var(--accent)">Cámara en vivo</span>
+          <span class="dot" style="--c:var(--amber)">Graba en microSD</span>
+        </div>
+      </div>
+      <div class="card">
+        <h2>Registro</h2>
+        <ol class="log" id="log"></ol>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+const DATA = {"W": 1848.2, "H": 1580.8, "limite": [[1652.3, 675.9], [1508.3, 1445.2], [132.1, 1178.1], [236.9, 638.4], [834.5, 763.4], [893.4, 476.6], [939.9, 237.4], [1348.8, 311.2], [1380.0, 146.5], [1741.1, 216.7]], "ring": [[1632.7, 672.1], [1492.3, 1421.8], [155.5, 1162.3], [252.7, 662.1], [850, 787.1], [913, 480.5], [955.7, 260.6], [1364.7, 334.4], [1395.9, 169.9], [1717.7, 232.5], [1632.7, 672.1]], "items": [{"id": "sala", "n": "Sala técnica (Club House)", "nota": "Switch core L3 + NVR + firewall + UPS. Ubicación supuesta.", "t": "sala", "x": 985.7, "y": 990.8, "modo": null}, {"id": "geste", "n": "Portería Este", "nota": "Riesgo alto: acceso. Switch PoE + PC de monitoreo (VLAN 20).", "t": "gab", "x": 1569.4, "y": 1010.2, "modo": null}, {"id": "c1", "n": "Cam 01", "nota": "Portería Este. Barrera de ingreso", "t": "cam", "x": 1581.2, "y": 1012.4, "modo": "utp"}, {"id": "c2", "n": "Cam 02", "nota": "Portería Este. Egreso", "t": "cam", "x": 1589.5, "y": 968.2, "modo": "utp"}, {"id": "c3", "n": "Cam 03", "nota": "Portería Este. Alambrado junto a la portería", "t": "cam", "x": 1572.9, "y": 1056.7, "modo": "utp"}, {"id": "goeste", "n": "Portería Oeste", "nota": "Riesgo alto: acceso. Switch PoE + PC de monitoreo (VLAN 20).", "t": "gab", "x": 207.7, "y": 893.8, "modo": null}, {"id": "c4", "n": "Cam 04", "nota": "Portería Oeste. Barrera de ingreso", "t": "cam", "x": 195.9, "y": 891.5, "modo": "utp"}, {"id": "c5", "n": "Cam 05", "nota": "Portería Oeste. Egreso", "t": "cam", "x": 187.3, "y": 935.7, "modo": "utp"}, {"id": "c6", "n": "Cam 06", "nota": "Portería Oeste. Alambrado junto a la portería", "t": "cam", "x": 204.5, "y": 847.3, "modo": "utp"}, {"id": "c7", "n": "Cam 07", "nota": "Lado este, linda con campo abierto.", "t": "cam", "x": 1622.4, "y": 792.3, "modo": "utp"}, {"id": "c8", "n": "Cam 08", "nota": "Lado este, linda con campo abierto.", "t": "cam", "x": 1541.4, "y": 1224.7, "modo": "largo"}, {"id": "c9", "n": "Cam 09", "nota": "Lado este, linda con campo abierto. Cerca de la esquina SE", "t": "cam", "x": 1515.6, "y": 1362.3, "modo": "utp"}, {"id": "c10", "n": "Cam 10", "nota": "Lado sur, linda con campo abierto. Esquina SE", "t": "cam", "x": 1463.2, "y": 1428.4, "modo": "largo"}, {"id": "c11", "n": "Cam 11", "nota": "Lado sur, linda con campo abierto.", "t": "cam", "x": 1276.7, "y": 1392.2, "modo": "largo"}, {"id": "c12", "n": "Cam 12", "nota": "Lado sur, linda con campo abierto.", "t": "cam", "x": 1090.2, "y": 1356, "modo": "largo"}, {"id": "c13", "n": "Cam 13", "nota": "Lado sur, linda con campo abierto.", "t": "cam", "x": 903.7, "y": 1319.8, "modo": "largo"}, {"id": "c14", "n": "Cam 14", "nota": "Lado sur, linda con campo abierto.", "t": "cam", "x": 717.2, "y": 1283.6, "modo": "largo"}, {"id": "c15", "n": "Cam 15", "nota": "Lado sur, linda con campo abierto.", "t": "cam", "x": 530.7, "y": 1247.3, "modo": "largo"}, {"id": "c16", "n": "Cam 16", "nota": "Lado sur, linda con campo abierto.", "t": "cam", "x": 344.1, "y": 1211.1, "modo": "largo"}, {"id": "c17", "n": "Cam 17", "nota": "Lado sur, linda con campo abierto. Esquina SO", "t": "cam", "x": 177.3, "y": 1178.7, "modo": "largo"}, {"id": "c18", "n": "Cam 18", "nota": "Lado oeste, linda con otro barrio.", "t": "cam", "x": 167.7, "y": 1036.8, "modo": "largo"}, {"id": "c19", "n": "Cam 19", "nota": "Los Geranios, linda con campo. Esquina", "t": "cam", "x": 265.9, "y": 677.1, "modo": "largo"}, {"id": "c20", "n": "Cam 20", "nota": "Los Geranios, linda con campo.", "t": "cam", "x": 461.6, "y": 718.1, "modo": "largo"}, {"id": "c21", "n": "Cam 21", "nota": "Los Geranios, linda con campo.", "t": "cam", "x": 657.4, "y": 759, "modo": "largo"}, {"id": "c22", "n": "Cam 22", "nota": "Los Geranios, linda con campo. Esquina", "t": "cam", "x": 833.6, "y": 795.9, "modo": "largo"}, {"id": "c23", "n": "Cam 23", "nota": "Los Cardenales, linda con el geriátrico.", "t": "cam", "x": 879.7, "y": 583.2, "modo": "largo"}, {"id": "c24", "n": "Cam 24", "nota": "Los Cardenales, linda con el geriátrico.", "t": "cam", "x": 928.4, "y": 338.1, "modo": "largo"}, {"id": "c25", "n": "Cam 25", "nota": "Norte, linda con otros barrios. Los Morajúes", "t": "cam", "x": 1173.1, "y": 287.6, "modo": "utp"}, {"id": "c26", "n": "Cam 26", "nota": "Norte, linda con otros barrios. Esquina NE", "t": "cam", "x": 1708, "y": 218.4, "modo": "largo"}, {"id": "c27", "n": "Cam 27", "nota": "Lado este, linda con campo abierto.", "t": "cam", "x": 1690, "y": 438.8, "modo": "largo"}, {"id": "c28", "n": "Cam 28", "nota": "Lado este, linda con campo abierto.", "t": "cam", "x": 1652.1, "y": 635.2, "modo": "largo"}, {"id": "g01", "n": "Gabinete 01 · Este norte", "nota": "", "t": "gab", "x": 1608.8, "y": 799.9, "modo": null}, {"id": "g02", "n": "Gabinete 02 · Este sur", "nota": "", "t": "gab", "x": 1514.9, "y": 1301.2, "modo": null}, {"id": "g03", "n": "Gabinete 03 · Sur 1", "nota": "", "t": "gab", "x": 1185.8, "y": 1362.3, "modo": null}, {"id": "g04", "n": "Gabinete 04 · Sur 2", "nota": "", "t": "gab", "x": 812.7, "y": 1289.9, "modo": null}, {"id": "g05", "n": "Gabinete 05 · Sur 3", "nota": "", "t": "gab", "x": 439.7, "y": 1217.5, "modo": null}, {"id": "g06", "n": "Gabinete 06 · Esquina SO", "nota": "", "t": "gab", "x": 165.1, "y": 1112.7, "modo": null}, {"id": "g07", "n": "Gabinete 07 · Geranios 1", "nota": "", "t": "gab", "x": 366.2, "y": 685.9, "modo": null}, {"id": "g08", "n": "Gabinete 08 · Geranios 2", "nota": "", "t": "gab", "x": 747.9, "y": 765.7, "modo": null}, {"id": "g09", "n": "Gabinete 09 · Cardenales", "nota": "", "t": "gab", "x": 916.4, "y": 463.1, "modo": null}, {"id": "g10", "n": "Gabinete 10 · Norte", "nota": "", "t": "gab", "x": 1170.9, "y": 299.4, "modo": null}, {"id": "g11", "n": "Gabinete 11 · Esquina NE", "nota": "", "t": "gab", "x": 1701, "y": 318.7, "modo": null}, {"id": "c29", "n": "Cam 29", "nota": "Club House. Boulevard / Trianón", "t": "cam", "x": 1022.3, "y": 955.9, "modo": "utp"}, {"id": "c30", "n": "Cam 30", "nota": "Club House. Ingreso y piscina", "t": "cam", "x": 940.7, "y": 965.8, "modo": "utp"}]};
+const IMG = "satelital.jpg";
+const W = DATA.W, H = DATA.H;
+const MBPS = 4, POE_W = 15, POE_MAX = 125;
+
+// ---------- modelo ----------
+const items = DATA.items;
+const sala = items.find(i => i.t === "sala");
+const gabs = items.filter(i => i.t === "gab");
+const cams = items.filter(i => i.t === "cam");
+const short = g => g.id === "sala" ? "Sala" : g.id === "geste" ? "Port. Este" : g.id === "goeste" ? "Port. Oeste" : "G" + g.id.slice(1);
+const nodeById = Object.fromEntries([sala, ...gabs].map(n => [n.id, n]));
+const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+
+// Proyecta cada gabinete sobre la traza del anillo para saber su orden y los metros de cada tramo
+const R = DATA.ring;
+const segL = []; let acc = [0];
+for (let i = 0; i < R.length - 1; i++) { segL.push(Math.hypot(R[i+1][0]-R[i][0], R[i+1][1]-R[i][1])); acc.push(acc[i] + segL[i]); }
+const RING_LEN = acc[acc.length - 1];
+function project(p) {
+  let best = { d: 1e9, s: 0 };
+  for (let i = 0; i < R.length - 1; i++) {
+    const [x1, y1] = R[i], [x2, y2] = R[i+1];
+    const dx = x2 - x1, dy = y2 - y1, L2 = dx*dx + dy*dy;
+    let t = ((p.x - x1) * dx + (p.y - y1) * dy) / L2; t = Math.max(0, Math.min(1, t));
+    const d = Math.hypot(x1 + t*dx - p.x, y1 + t*dy - p.y);
+    if (d < best.d) best = { d, s: acc[i] + t * segL[i] };
+  }
+  return best.s;
+}
+function pointAt(s) {
+  s = ((s % RING_LEN) + RING_LEN) % RING_LEN;
+  for (let i = 0; i < segL.length; i++) if (s <= acc[i+1]) {
+    const t = (s - acc[i]) / segL[i];
+    return [R[i][0] + t*(R[i+1][0]-R[i][0]), R[i][1] + t*(R[i+1][1]-R[i][1])];
+  }
+  return R[0];
+}
+function subPath(s0, s1) { // recorre el anillo de s0 a s1 en sentido creciente
+  if (s1 < s0) s1 += RING_LEN;
+  const pts = [pointAt(s0)];
+  for (let k = 0; k < 3; k++) for (let i = 1; i < acc.length; i++) { const a = acc[i] + k*RING_LEN; if (a > s0 && a < s1) pts.push(R[i % (R.length-1)]); }
+  pts.push(pointAt(s1));
+  return pts;
+}
+gabs.forEach(g => g.s = project(g));
+const ring = [...gabs].sort((a, b) => a.s - b.s);
+const edges = [];
+ring.forEach((g, i) => {
+  const h = ring[(i + 1) % ring.length];
+  const pts = subPath(g.s, h.s);
+  let len = 0; for (let k = 1; k < pts.length; k++) len += Math.hypot(pts[k][0]-pts[k-1][0], pts[k][1]-pts[k-1][1]);
+  edges.push({ id: "r" + i, a: g.id, b: h.id, pts, len, tipo: "anillo", name: `${short(g)} – ${short(h)}` });
+});
+["geste", "goeste"].forEach(id => {
+  const g = nodeById[id];
+  edges.push({ id: id === "geste" ? "re" : "ro", a: "sala", b: id, pts: [[sala.x, sala.y], [g.x, g.y]], len: dist(sala, g), tipo: "ramal", name: id === "geste" ? "Ramal este" : "Ramal oeste" });
+});
+// Cada cámara cuelga del gabinete (o la sala) más cercano, como en el croquis
+cams.forEach(c => { let best = null; [sala, ...gabs].forEach(g => { if (!best || dist(c, g) < dist(c, best)) best = g; }); c.gab = best.id; c.len = dist(c, best); });
+[sala, ...gabs].forEach(g => g.cams = cams.filter(c => c.gab === g.id));
+
+// Posiciones del esquema: el anillo en un círculo, cada gabinete en su ángulo real alrededor de la sala
+const CX = W / 2, CY = H / 2, RAD = Math.min(W, H) * 0.36;
+ring.forEach(g => { const a = Math.atan2(g.y - CY, g.x - CX); g.a = a; });
+// reparte los ángulos de forma pareja respetando el orden del anillo
+{ const a0 = ring[0].a; ring.forEach((g, i) => { g.ea = a0 + i * 2 * Math.PI / ring.length; g.ex = CX + RAD * Math.cos(g.ea); g.ey = CY + RAD * Math.sin(g.ea); }); }
+sala.ex = CX; sala.ey = CY; sala.ea = 0;
+[sala, ...gabs].forEach(g => {
+  const n = g.cams.length;
+  g.cams.forEach((c, k) => {
+    if (g === sala) { c.ex = CX + (k ? 90 : -90); c.ey = CY + 120; return; }
+    const spread = 0.13, a = g.ea + (k - (n - 1) / 2) * spread;
+    c.ex = CX + (RAD + 150) * Math.cos(a); c.ey = CY + (RAD + 150) * Math.sin(a);
+  });
+});
+
+// ---------- estado ----------
+const st = { view: "mapa", cut: new Set(), down: new Set(), salaDown: false, power: 0, sel: null, scen: null };
+let prevActive = null;
+const logEl = document.getElementById("log");
+function log(t) { const li = document.createElement("li"); const h = new Date(); li.textContent = h.toTimeString().slice(0, 8) + "  " + t; logEl.prepend(li); }
+
+function compute() {
+  const alive = id => id === "sala" ? !st.salaDown : !st.down.has(id) && !(st.power === 2 && id !== "geste" && id !== "goeste");
+  const usable = e => !st.cut.has(e.id) && alive(e.a) && alive(e.b);
+  const adj = {}; Object.keys(nodeById).forEach(k => adj[k] = []);
+  edges.forEach(e => { if (usable(e)) { adj[e.a].push(e); adj[e.b].push(e); } });
+  const reach = new Set(), parentEdge = {}, order = [];
+  if (alive("sala")) {
+    reach.add("sala"); const q = ["sala"];
+    while (q.length) { const u = q.shift(); order.push(u);
+      // ordena para que el resultado sea estable: primero ramales, después anillo
+      adj[u].slice().sort((x, y) => x.id.localeCompare(y.id)).forEach(e => { const v = e.a === u ? e.b : e.a; if (!reach.has(v)) { reach.add(v); parentEdge[v] = e; q.push(v); } });
+    }
+  }
+  const camState = {};
+  cams.forEach(c => {
+    const g = c.gab;
+    if (!alive(g) && g !== "sala") camState[c.id] = "off";
+    else if (st.salaDown) camState[c.id] = (g === "geste" || g === "goeste") ? "port" : "sd";
+    else if (reach.has(g)) camState[c.id] = "ok";
+    else camState[c.id] = "sd";
+  });
+  // tráfico: cada enlace del árbol lleva las cámaras en vivo que cuelgan "debajo"
+  const sub = {}; Object.keys(nodeById).forEach(k => sub[k] = nodeById[k].cams.filter(c => camState[c.id] === "ok").length);
+  for (let i = order.length - 1; i > 0; i--) { const v = order[i], e = parentEdge[v], p = e.a === v ? e.b : e.a; sub[p] += sub[v]; }
+  const edgeState = {};
+  edges.forEach(e => {
+    if (st.cut.has(e.id)) edgeState[e.id] = { s: "cut" };
+    else if (!alive(e.a) || !alive(e.b)) edgeState[e.id] = { s: "dead" };
+    else { const tree = Object.entries(parentEdge).find(([v, pe]) => pe === e);
+      if (tree) edgeState[e.id] = { s: "on", cams: sub[tree[0]], mbps: sub[tree[0]] * MBPS };
+      else edgeState[e.id] = { s: reach.has(e.a) && reach.has(e.b) ? "blocked" : "dead" }; }
+  });
+  return { alive, reach, camState, edgeState };
+}
+
+// ---------- dibujo ----------
+const svg = document.getElementById("svg");
+svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+const C = { accent: "#3dbc58", soft: "#98d2aa", amber: "#f2b33d", red: "#ff5a4f", blocked: "#6f8f80", cyan: "#3fd0ff", white: "#ffffff", fg: "#e6f4ea" };
+const pos = o => st.view === "mapa" ? [o.x, o.y] : [o.ex, o.ey];
+const fmt = n => n.toLocaleString("es-AR", { maximumFractionDigits: 1 });
+function edgePath(e) {
+  if (st.view === "mapa") return "M" + e.pts.map(p => p[0].toFixed(1) + " " + p[1].toFixed(1)).join(" L");
+  const A = nodeById[e.a], B = nodeById[e.b];
+  if (e.tipo === "ramal") return `M${A.ex} ${A.ey} L${B.ex} ${B.ey}`;
+  return `M${A.ex} ${A.ey} A${RAD} ${RAD} 0 0 1 ${B.ex} ${B.ey}`;
+}
+function midOf(e) {
+  if (st.view === "mapa") { const half = e.len / 2; let run = 0; for (let k = 1; k < e.pts.length; k++) { const L = Math.hypot(e.pts[k][0]-e.pts[k-1][0], e.pts[k][1]-e.pts[k-1][1]); if (run + L >= half) { const t = (half - run) / L; return [e.pts[k-1][0] + t*(e.pts[k][0]-e.pts[k-1][0]), e.pts[k-1][1] + t*(e.pts[k][1]-e.pts[k-1][1])]; } run += L; } }
+  const A = nodeById[e.a], B = nodeById[e.b];
+  if (e.tipo === "ramal") return [(A.ex + B.ex) / 2, (A.ey + B.ey) / 2];
+  let a1 = A.ea, a2 = B.ea; if (a2 < a1) a2 += 2 * Math.PI; const m = (a1 + a2) / 2; return [CX + RAD * Math.cos(m), CY + RAD * Math.sin(m)];
+}
+function draw() {
+  const S = compute(); window.__S = S;
+  let h = "";
+  if (st.view === "mapa") {
+    h += `<image href="${IMG}" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="none" opacity=".62"/>`;
+    h += `<polygon points="${DATA.limite.map(p => p.join(",")).join(" ")}" fill="none" stroke="${C.white}" stroke-width="3" stroke-opacity=".7"/>`;
+  } else {
+    h += `<circle cx="${CX}" cy="${CY}" r="${RAD}" fill="none" stroke="#1d5340" stroke-width="2"/>`;
+  }
+  // UTP cámara → gabinete
+  cams.forEach(c => { const g = nodeById[c.gab]; const [x1, y1] = pos(c), [x2, y2] = pos(g); const cs = S.camState[c.id];
+    h += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${cs === "off" ? C.red : C.cyan}" stroke-opacity="${cs === "off" ? .5 : .75}" stroke-width="3" ${c.modo === "largo" ? 'stroke-dasharray="10 8"' : ""}/>`; });
+  // fibra
+  edges.forEach(e => { const es = S.edgeState[e.id]; const d = edgePath(e);
+    const col = es.s === "on" ? C.accent : es.s === "blocked" ? C.blocked : es.s === "cut" ? C.red : "#3a4a44";
+    const w = e.tipo === "ramal" ? 11 : 9;
+    h += `<path class="edge" d="${d}" stroke="${col}" stroke-width="${w}" ${es.s === "blocked" ? 'stroke-dasharray="22 16"' : ""} ${es.s === "cut" ? 'stroke-dasharray="4 18"' : ""}/>`;
+    h += `<path class="edge-hit" data-edge="${e.id}" d="${d}"><title>${e.name}</title></path>`;
+    const [mx, my] = midOf(e);
+    if (es.s === "cut") h += `<g transform="translate(${mx} ${my})" pointer-events="none"><circle r="26" fill="${C.red}"/><path d="M-11 -11 L11 11 M11 -11 L-11 11" stroke="#fff" stroke-width="6" stroke-linecap="round"/></g>`;
+    else if (es.s === "blocked") h += `<g transform="translate(${mx} ${my})" pointer-events="none"><rect x="-58" y="-17" width="116" height="34" rx="17" fill="#0d3527" stroke="${C.blocked}" stroke-width="2"/><text class="lbl" text-anchor="middle" y="8" font-size="23" fill="${C.fg}" stroke-width="0">bloqueado</text></g>`;
+    else if (es.s === "on" && (e.tipo === "ramal" || st.sel === e.id)) h += `<text class="lbl" x="${mx}" y="${my - 22}" text-anchor="middle" font-size="30" fill="${C.fg}" stroke-width="8" pointer-events="none">${es.mbps} Mb/s · ${fmt(es.mbps / 10)} %</text>`;
+  });
+  // cámaras
+  cams.forEach(c => { const [x, y] = pos(c); const cs = S.camState[c.id];
+    const col = cs === "ok" ? C.accent : cs === "off" ? C.red : C.amber;
+    h += `<g class="cam" data-cam="${c.id}" transform="translate(${x} ${y})"><circle r="${st.sel === c.id ? 20 : 14}" fill="${col}" stroke="#051c14" stroke-width="4" class="${cs === "sd" ? "pulse" : ""}"/><title>${c.n}</title></g>`; });
+  // gabinetes y sala
+  [sala, ...gabs].forEach(g => { const [x, y] = pos(g); const ok = S.alive(g.id); const isSala = g === sala;
+    const reach = S.reach.has(g.id);
+    const fill = !ok ? C.red : isSala ? C.white : reach ? C.accent : C.amber;
+    const s = isSala ? 34 : 24;
+    h += `<g class="node" data-node="${g.id}" transform="translate(${x} ${y})">`;
+    h += isSala ? `<rect x="${-s}" y="${-s}" width="${2*s}" height="${2*s}" rx="8" fill="${fill}" stroke="#051c14" stroke-width="5"/>` : `<rect x="${-s}" y="${-s}" width="${2*s}" height="${2*s}" rx="5" fill="${fill}" stroke="#051c14" stroke-width="5" transform="rotate(45)"/>`;
+    if (!ok) h += `<path d="M-12 -12 L12 12 M12 -12 L-12 12" stroke="#fff" stroke-width="6" stroke-linecap="round"/>`;
+    if (st.power >= 1 && ok) h += `<g transform="translate(${s + 6} ${-s - 6})"><rect x="0" y="-12" width="30" height="20" rx="3" fill="${C.amber}"/><rect x="30" y="-6" width="5" height="8" fill="${C.amber}"/></g>`;
+    h += `<text class="lbl" y="${s + 34}" text-anchor="middle" font-size="${isSala ? 34 : 28}" fill="${C.fg}" stroke-width="8">${short(g)}</text><title>${g.n}</title></g>`;
+  });
+  if (st.view === "esq") h += `<text class="lbl" x="${CX}" y="${CY - 70}" text-anchor="middle" font-size="30" fill="${C.soft}" stroke-width="0">NVR · switch central · firewall</text>`;
+  svg.innerHTML = h;
+  panel(S);
+}
+
+// ---------- panel ----------
+function panel(S) {
+  const vals = Object.values(S.camState);
+  const ok = vals.filter(v => v === "ok").length, off = vals.filter(v => v === "off").length, sd = vals.length - ok - off;
+  document.getElementById("k-ok").textContent = ok;
+  document.getElementById("k-sd").textContent = sd;
+  document.getElementById("k-off").textContent = off;
+  const on = edges.filter(e => S.edgeState[e.id].s === "on").sort((a, b) => S.edgeState[b.id].mbps - S.edgeState[a.id].mbps)[0];
+  document.getElementById("load").innerHTML = on ? `Enlace de fibra más cargado: <strong>${on.name}</strong> · <strong>${S.edgeState[on.id].mbps} Mb/s</strong> de 1 Gb/s<div class="bar"><i style="width:${Math.max(1, S.edgeState[on.id].mbps / 10)}%"></i></div>` : "No hay enlaces de fibra en uso.";
+  // mensajes
+  const cuts = [...st.cut].map(id => edges.find(e => e.id === id));
+  const downs = [...st.down].map(id => nodeById[id]);
+  let m = [];
+  if (!cuts.length && !downs.length && !st.salaDown && !st.power) {
+    m.push("<p><b>Todo funcionando.</b> Las 30 cámaras llegan a la sala por el anillo. RSTP deja dos puertos bloqueados para que el anillo no forme un bucle; son el camino de reserva.</p>");
+    m.push("<p>Probá cortar un tramo: hacé clic sobre la fibra verde.</p>");
+  }
+  if (cuts.length) {
+    const lost = sd + off;
+    m.push(`<p><b>${cuts.length === 1 ? "Corte en " + cuts[0].name : cuts.length + " tramos cortados"}.</b> ${lost === 0 ? "No se pierde ninguna cámara: RSTP habilitó el camino de reserva y el tráfico da la vuelta por el otro lado en cientos de milisegundos." : `Quedan ${lost} cámaras aisladas de la sala. ${sd ? "Siguen grabando en su microSD y el NVR recupera ese video cuando vuelve el enlace (ANR)." : ""}`}</p>`);
+    if (cuts.length >= 2 && sd) m.push("<p>El anillo protege contra <b>un</b> corte. Con dos cortes, el tramo del medio queda aislado.</p>");
+  }
+  if (downs.length) m.push(`<p><b>Falla de ${downs.map(short).join(", ")}.</b> Se pierden ${downs.reduce((n, g) => n + g.cams.length, 0)} cámaras de ese gabinete. El resto del anillo sigue andando por el otro lado. Se cambia por el switch de repuesto con la configuración guardada.</p>`);
+  if (st.salaDown) m.push("<p><b>Cae la sala técnica.</b> Se pierde el monitoreo central, pero las cámaras siguen grabando en su microSD. Los guardias de las porterías siguen viendo las cámaras de su acceso desde el switch local.</p>");
+  if (st.power === 1) m.push("<p><b>Corte de luz.</b> Las UPS de cada gabinete y de la sala toman la carga: unos 60 W por gabinete dan 2 a 3 horas de autonomía. No se pierde nada.</p>");
+  if (st.power === 2) m.push("<p><b>El corte pasa las 3 horas.</b> Se agotan las UPS de los gabinetes del perímetro. Si el country tiene grupo electrógeno, conviene conectarle la sala y las porterías, que siguen funcionando.</p>");
+  document.getElementById("msg").innerHTML = m.join("");
+  detail(S);
+  document.querySelectorAll("#scen .btn").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.k === st.scen)));
+  // registro de RSTP
+  const active = new Set(edges.filter(e => S.edgeState[e.id].s === "on").map(e => e.id));
+  if (prevActive) active.forEach(id => { if (!prevActive.has(id)) log(`RSTP habilitó ${edges.find(e => e.id === id).name}`); });
+  prevActive = active;
+}
+function detail(S) {
+  const el = document.getElementById("detail");
+  const id = st.sel;
+  if (!id) { el.innerHTML = `<h2>Detalle</h2><p class="nota" style="margin:0">Pasá el mouse por una cámara, un gabinete o un tramo de fibra para ver sus datos.</p>`; return; }
+  const c = cams.find(x => x.id === id), g = nodeById[id], e = edges.find(x => x.id === id);
+  if (c) {
+    const largo = c.modo === "largo";
+    const est = { ok: "En vivo en la sala", sd: "Grabando en microSD", port: "La ve la portería", off: "Sin imagen" }[S.camState[c.id]];
+    el.innerHTML = `<h3>${c.n}</h3><p class="nota">${c.nota || ""}</p><dl>
+      <dt>Estado</dt><dd>${est}</dd>
+      <dt>Conectada a</dt><dd>${nodeById[c.gab].n}</dd>
+      <dt>UTP</dt><dd>≈ ${Math.round(c.len)} m en línea recta</dd>
+      <dt>Puerto</dt><dd>${largo ? "Largo alcance (hasta 300 m, 10 Mb/s)" : "Estándar (hasta 100 m, 100 Mb/s)"}</dd>
+      <dt>Uso del puerto</dt><dd>${MBPS} Mb/s · ${largo ? "40 %" : "4 %"}</dd>
+      <dt>PoE</dt><dd>${POE_W} W</dd></dl>`;
+  } else if (g) {
+    const ring_ = edges.filter(x => x.tipo === "anillo" && (x.a === g.id || x.b === g.id));
+    el.innerHTML = `<h3>${g.n}</h3><p class="nota">${g.nota || (g === sala ? "" : "Switch PoE con dos puertos de fibra para el anillo.")}</p><dl>
+      <dt>Estado</dt><dd>${S.alive(g.id) ? (S.reach.has(g.id) ? "Conectado a la sala" : "Aislado de la sala") : "Apagado"}</dd>
+      <dt>Cámaras</dt><dd>${g.cams.length} (${g.cams.map(x => x.n.replace("Cam ", "")).join(", ") || "–"})</dd>
+      ${g === sala ? "" : `<dt>PoE</dt><dd>${g.cams.length * POE_W} W de ${POE_MAX} W</dd>`}
+      ${ring_.map(x => `<dt>Tramo</dt><dd>${x.name}: ${Math.round(x.len)} m</dd>`).join("")}
+      </dl><p class="nota" style="margin:8px 0 0">Clic para ${S.alive(g.id) ? "simular su falla" : "volver a prenderlo"}.</p>`;
+  } else if (e) {
+    const es = S.edgeState[e.id];
+    el.innerHTML = `<h3>${e.name}</h3><p class="nota">${e.tipo === "ramal" ? "Fibra monomodo ADSS por el boulevard central." : "Fibra monomodo ADSS, aérea, unos 20 m adentro del alambrado."}</p><dl>
+      <dt>Largo</dt><dd>${Math.round(e.len)} m</dd>
+      <dt>Estado</dt><dd>${{ on: "En uso", blocked: "Bloqueado por RSTP (reserva)", cut: "Cortado", dead: "Sin uso" }[es.s]}</dd>
+      ${es.s === "on" ? `<dt>Tráfico</dt><dd>${es.cams} cámaras · ${es.mbps} Mb/s de 1 Gb/s</dd>` : ""}</dl>
+      <p class="nota" style="margin:8px 0 0">Clic para ${es.s === "cut" ? "repararlo" : "cortarlo"}.</p>`;
+  }
+}
+
+// ---------- escenarios ----------
+const tramoSur = edges.find(e => e.tipo === "anillo" && [e.a, e.b].includes("g04") && [e.a, e.b].includes("g05"));
+const tramoSur2 = edges.find(e => e.tipo === "anillo" && [e.a, e.b].includes("g02") && [e.a, e.b].includes("g03"));
+const SCEN = [
+  { k: "tramo", t: "Corte de fibra en el anillo", f: () => st.cut.add(tramoSur.id) },
+  { k: "ramal", t: "Corte del ramal este", f: () => st.cut.add("re") },
+  { k: "dos", t: "Dos cortes a la vez", f: () => { st.cut.add(tramoSur.id); st.cut.add(tramoSur2.id); } },
+  { k: "switch", t: "Falla de un switch", f: () => st.down.add("g08") },
+  { k: "luz", t: "Corte de luz (UPS)", f: () => st.power = 1 },
+  { k: "luz3", t: "Corte de luz de más de 3 h", f: () => st.power = 2 },
+  { k: "sala", t: "Cae la sala técnica", f: () => st.salaDown = true },
+];
+const scenEl = document.getElementById("scen");
+SCEN.forEach(s => { const b = document.createElement("button"); b.className = "btn"; b.dataset.k = s.k; b.textContent = s.t;
+  b.onclick = () => { clear(); st.scen = s.k; s.f(); log("Escenario: " + s.t); draw(); }; scenEl.appendChild(b); });
+function clear() { st.cut.clear(); st.down.clear(); st.salaDown = false; st.power = 0; st.scen = null; }
+
+// ---------- interacción ----------
+svg.addEventListener("click", ev => {
+  const e = ev.target.closest("[data-edge]"), n = ev.target.closest("[data-node]");
+  if (e) { const id = e.dataset.edge; const ed = edges.find(x => x.id === id);
+    if (st.cut.has(id)) { st.cut.delete(id); log("Reparado: " + ed.name); } else { st.cut.add(id); log("Corte: " + ed.name); }
+    st.scen = null; st.sel = id; draw(); }
+  else if (n) { const id = n.dataset.node;
+    if (id === "sala") { st.salaDown = !st.salaDown; log(st.salaDown ? "Cae la sala técnica" : "Vuelve la sala técnica"); }
+    else if (st.down.has(id)) { st.down.delete(id); log("Vuelve " + short(nodeById[id])); } else { st.down.add(id); log("Falla " + short(nodeById[id])); }
+    st.scen = null; st.sel = id; draw(); }
+});
+svg.addEventListener("mouseover", ev => {
+  const t = ev.target.closest("[data-cam],[data-node],[data-edge]"); if (!t) return;
+  const id = t.dataset.cam || t.dataset.node || t.dataset.edge; if (id === st.sel) return;
+  st.sel = id; detail(window.__S);
+  if (t.dataset.edge || t.dataset.cam) draw();
+});
+document.getElementById("reset").onclick = () => { clear(); st.sel = null; log("Todo restablecido"); draw(); };
+const vm = document.getElementById("v-mapa"), ve = document.getElementById("v-esq");
+function setView(v) { st.view = v; vm.setAttribute("aria-pressed", String(v === "mapa")); ve.setAttribute("aria-pressed", String(v === "esq")); draw(); }
+vm.onclick = () => setView("mapa"); ve.onclick = () => setView("esq");
+if (location.hash === "#esquema") st.view = "esq", vm.setAttribute("aria-pressed", "false"), ve.setAttribute("aria-pressed", "true");
+log("Red en estado normal");
+draw();
+</script>
+
+</body></html>
